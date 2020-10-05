@@ -1,0 +1,9 @@
+[
+    {
+        "user": {
+            "id": "123",
+            "name": "Quentin"
+        },
+        "balance": 15000
+    }
+]
