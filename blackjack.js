@@ -21,25 +21,7 @@ bot.on('message', message => {
 
 	if(message.content.startsWith('bet') && !game.dealing) {
 		message.delete();
-		if(isNaN(parseInt(message.content.split(' ')[1], 10))) {
-			message.reply('Erreur de syntaxe dans le message, `bet MONTANT`').then(msg => {
-				setTimeout(() => {
-					msg.delete();
-				}, 4000);
-			});
-			return;
-		}
-		let amount = parseInt(message.content.split(' ')[1], 10);
-		let better = game.players.find(p => p.user.id === message.author.id);
-		if(better.balance < amount) {
-			message.reply('Tu n\'as pas assez d\argent sur ta balance').then(msg => {
-				setTimeout(() => {
-					msg.delete();
-				}, 4000);
-			});
-			return;
-		}
-		game.bet(better, amount);
+		game.bet(message);
 	}
 
 	if(message.content === 'deal' && !game.dealing) {
