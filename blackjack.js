@@ -28,6 +28,11 @@ bot.on('message', message => {
 		message.delete();
 		game.deal();
 	}
+
+	if(message.content === 'cancelbet' && !game.dealing) {
+		message.delete();
+		game.cancelBet(message.author);
+	}
 });
 
 bot.login(credentials.token);

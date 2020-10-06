@@ -1,9 +1,44 @@
 [
     {
         "user": {
-            "id": "123",
-            "name": "Quentin"
+            "id": "184331142286147584",
+            "username": "Quinta_",
+            "bot": false,
+            "discriminator": "2145",
+            "avatar": "9182cac95c8efd009cb55ee9e51de831",
+            "flags": 256,
+            "lastMessageChannelID": null,
+            "createdTimestamp": 1464018369028,
+            "defaultAvatarURL": "https://cdn.discordapp.com/embed/avatars/0.png",
+            "tag": "Quinta_#2145",
+            "avatarURL": "https://cdn.discordapp.com/avatars/184331142286147584/9182cac95c8efd009cb55ee9e51de831.webp",
+            "displayAvatarURL": "https://cdn.discordapp.com/avatars/184331142286147584/9182cac95c8efd009cb55ee9e51de831.webp"
         },
-        "balance": 15000
+        "balance": 21500,
+        "cards": [],
+        "bet": 0,
+        "val": 0,
+        "stand": true
+    },
+    {
+        "user": {
+            "id": "268753117082943488",
+            "username": "Pepalex",
+            "bot": false,
+            "discriminator": "4908",
+            "avatar": "f3030a724bc1005c3ac6246003162ef6",
+            "lastMessageChannelID": null,
+            "flags": 0,
+            "createdTimestamp": 1484146136304,
+            "defaultAvatarURL": "https://cdn.discordapp.com/embed/avatars/3.png",
+            "tag": "Pepalex#4908",
+            "avatarURL": "https://cdn.discordapp.com/avatars/268753117082943488/f3030a724bc1005c3ac6246003162ef6.webp",
+            "displayAvatarURL": "https://cdn.discordapp.com/avatars/268753117082943488/f3030a724bc1005c3ac6246003162ef6.webp"
+        },
+        "balance": 19000,
+        "cards": [],
+        "bet": 0,
+        "val": 0,
+        "stand": false
     }
 ]

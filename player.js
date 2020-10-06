@@ -4,11 +4,7 @@ const Deck = require('./cards.js');
 class Player {
 	constructor(user, balance = 10000) {
 		this.user = user;
-		this.loadUser(user).then(found => {
-			if(!found) {
-				this.balance = balance;
-			}
-		});
+		this.balance = balance;
 		this.cards = [];
 		this.bet = 0;
 		this.val = 0;
@@ -25,14 +21,30 @@ class Player {
 					jsonContent.forEach(player => {
 						if(player.user.id === user.id) {
 							this.balance = player.balance;
-							resolve(true);
+							resolve(player);
 						}
 					});
-					resolve(false);
+					resolve(null);
 				}
 			});
 		});
+	}
 
+	static loadAll() {
+		let all = [];
+		let content = fs.readFileSync('./save.json');
+		let jsonContent = JSON.parse(content);
+		jsonContent.forEach(player => {
+			all.push(new Player(player.user, player.balance));
+		});
+		return all;
+	}
+
+	static saveAll(players) {
+		fs.exists('./save.json', exists => {
+			if(!exists) Player.createSaveFile();
+			fs.writeFileSync('./save.json', JSON.stringify(players, null, 4), 'utf8');
+		});
 	}
 
 	save() {
@@ -81,9 +93,7 @@ class Player {
 		if(this.val === `11/21` && this.cards.length === 2 || this.val > 21 || this.val === 21) { // If blackjack or bust or 21, stand the player
 			this.stand = true;
 			if(this.val === `11/21` && this.cards.length === 2) // If the player has a BlackJack
-				this.val = `21 (BlackJack)`; // Change value
-			else if(this.val > 21) // If the player has busted
-				this.val = `${this.val} BUST`; // Change value
+				this.val = `21 BlackJack`; // Change value
 		}
 		return this.val;
 	}
