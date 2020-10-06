@@ -9,7 +9,12 @@ class Player {
 		this.bet = 0;
 		this.val = 0;
 
+		this.splitCards = [];
+		this.splitted = false;
+		this.splitVal = 0;
+
 		this.stand = false;
+		this.splitStand = false;
 	}
 
 	loadUser(user) {
@@ -73,29 +78,33 @@ class Player {
 		return this.cards.join(' | ');
 	}
 
-	calcVal() {
-		this.val = 0; // Reset val
+	splitCardsToString() {
+		return this.splitCards.join(' | ');
+	}
+
+	calcVal(cards = this.cards, val = this.val, stand = this.stand) {
+		val = 0; // Reset val
 		let ace = false; // Set ace
 
-		this.cards.forEach(c => { // To check each card
+		cards.forEach(c => { // To check each card
 			if(Deck.getVal(c) == 'A') { // If the card is an ace
 				if(ace) // It is not the first ace of the player's hand
-					this.val += 1; // Add 1 to val since 2 aces can't be 1/11, do not change ace boolean to still get a 1/11 ace
+					val += 1; // Add 1 to val since 2 aces can't be 1/11, do not change ace boolean to still get a 1/11 ace
 				ace = true; // Sets ace to true to know that there's an ace in the player's hand
 			}else {
-				this.val += Deck.getVal(c); // Add the value of the card to the hand value
+				val += Deck.getVal(c); // Add the value of the card to the hand value
 			}
 		});
 
 		if(ace) // If the player has an ace
-			this.val = this.val+11 > 21 ? this.val+1 : `${this.val+1}/${this.val+11}`; // Displays both values or only the low one if the high one is bust
+			val = val+11 > 21 ? val+1 : `${val+1}/${val+11}`; // Displays both values or only the low one if the high one is bust
 
-		if(this.val === `11/21` && this.cards.length === 2 || this.val > 21 || this.val === 21) { // If blackjack or bust or 21, stand the player
-			this.stand = true;
-			if(this.val === `11/21` && this.cards.length === 2) // If the player has a BlackJack
-				this.val = `21 BlackJack`; // Change value
+		if(val === `11/21` && cards.length === 2 || val > 21 || val === 21) { // If blackjack or bust or 21, stand the player
+			stand = true;
+			if(val === `11/21` && cards.length === 2) // If the player has a BlackJack
+				val = `21 BlackJack`; // Change value
 		}
-		return this.val;
+		return val;
 	}
 
 	static createSaveFile(p) {
