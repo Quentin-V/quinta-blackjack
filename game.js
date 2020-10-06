@@ -2,6 +2,10 @@ const Deck = require('./cards.js');
 const Player = require('./player.js');
 const Discord = require('discord.js');
 
+const DEBUG = true;
+const BANK_CARDS = ['Eight :spades:', 'Ten :hearts:'];
+const PLAYER_CARDS = ['Ten :diamonds:', 'Ten :spades:'];
+
 class BlackJack {
 	constructor(message) {
 		this.allPlayers = Player.loadAll();
@@ -19,7 +23,6 @@ class BlackJack {
 	}
 
 	deal() {
-
 		if(this.betters === null || this.players.length === 0) return;
 		this.betters.delete();
 		this.betters = null;
@@ -38,13 +41,18 @@ class BlackJack {
 			this.bank.push(this.deck.c.shift()); // Deal cards to the bank
 		}
 
-		this.players.forEach(p => {
+		if(DEBUG) {
+			this.bank = BANK_CARDS;
+			this.players[0].cards = PLAYER_CARDS;
+		}
+
+		this.players.forEach(p => { // Calculates the value of each player's hand
 			let v = p.calcVal();
 			if (isNaN(v) && v.includes('BlackJack')) {
 				p.stand = true;
 				++this.choosing;
 			}
-		}); // Calculates the value of each player's hand
+		});
 
 		this.sendMessage().then(collector => {
 			if(Deck.getVal(this.bank[0]) === 'A') this.insurance(collector);
@@ -60,30 +68,43 @@ class BlackJack {
 			let filter = (r, u) => !u.bot;
 			let insuranceColl = m.createReactionCollector(filter, {time:20_000});
 			let insured = [];
+			let notInsured = [];
 			let ignore = [];
+			let hasChosen = 0;
 			insuranceColl.on('collect', (r, u) => {
 				r.users.remove(u);
-				if(r.emoji.name === '❎') return;
 				let playerIns = this.players.find(p => p.user.id === u.id);
-				if(playerIns.balance >= playerIns.bet / 2) { // If the player can pay insurance
-					playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
-					insured.push(playerIns);
-					m.edit(m.content + `\n${playerIns.user} took the insurance.`);
-				}else {
-					if(!ignore.includes(playerIns)) {
-						this.channel.send(`${playerIns.user}, you can not afford the insurance.`).then(m => {
-							setTimeout(() => {
-								m.delete();
-							}, 4_000);
-						});
-						ignore.push(playerIns); // Add the player to the ignore list
+				if(insured.includes(playerIns) || notInsured.includes(playerIns) || (r.emoji.name !== '✅' && r.emoji.name !== '❎')) return;
+				++hasChosen;
+				if(r.emoji.name === '✅') {
+					if(playerIns.balance >= playerIns.bet / 2) { // If the player can pay insurance
+						playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
+						insured.push(playerIns);
+						m.edit(m.content + `\n${playerIns.user} took the insurance.`);
+					}else {
+						if(!ignore.includes(playerIns)) {
+							this.channel.send(`${playerIns.user}, you can not afford the insurance.`).then(m => {
+								setTimeout(() => {
+									m.delete();
+								}, 4_000);
+							});
+							ignore.push(playerIns); // Add the player to the ignore list
+						}
 					}
+				}else if(r.emoji.name === '❎') {
+					++hasChosen;
+				}
+				if(hasChosen >= this.players.length) {
+					setTimeout(() => {
+						insuranceColl.stop('everybodyChose');
+					}, 1000);
 				}
 			});
 			insuranceColl.on('end', (c, r) => {
 				m.reactions.removeAll();
 				if(Deck.getVal(this.bank[1]) === 10) { // The bank has a blackjack
 					m.edit(`The bank has a BlackJack, you lose your bet if you're not insured.`); // Inform players
+					this.bankBj(insured);
 					thisDealCollector.stop('bankBj');
 				}else {
 					m.edit('The bank does not have a BlackJack'); // Inform players
@@ -92,7 +113,6 @@ class BlackJack {
 					m.delete();
 				}, 5_000);
 				this.wait = false; // Reset wait to false for players to be able to play
-				if(this.choosing >= this.players.length) thisDealCollector.stop('dealEnd');
 			});
 		});
 	}
@@ -150,12 +170,6 @@ class BlackJack {
 						}
 
 						bj.editWin(win, lose, push, bankVal).then(msg => {
-							bj.players.forEach(p => { // Reset the cards and bet of each player
-								p.bet = 0;
-								p.val = 0;
-								p.cards = [];
-							});
-							bj.players = []; // Reset players
 							setTimeout(() => {
 								resolve(msg);
 							}, 3000);
@@ -246,15 +260,47 @@ class BlackJack {
 		collector.on('collect', (r, u) => this.handleReactions(r, u, collector));
 		collector.on('end', (c, r) => {
 			this.message.reactions.removeAll(); // Removes all the reactions form the message
-			this.bankDraw().then(msg => { // Draw for the bank then
-				this.dealing = false; // Reset dealing
-				this.bank = []; // Reset the bank cards
-				this.choosing = 0; // Reset choosing index
-				Player.saveAll(this.allPlayers);
-				setTimeout(() => {
-					msg.delete();
-				}, 4_000);
-			});
+			if(r === 'dealEnd') {
+				this.bankDraw().then(msg => { // Draw for the bank then
+					this.reset();
+				});
+			}else if(r === 'bankBj') {
+				this.reset();
+			}
+		});
+	}
+
+	reset() {
+		this.dealing = false; // Reset dealing
+		this.bank = []; // Reset the bank cards
+		this.choosing = 0; // Reset choosing index
+		this.players.forEach(p => { // Reset the cards and bet of each player
+			p.bet = 0;
+			p.val = 0;
+			p.cards = [];
+			p.splitted = false;
+		});
+		this.players = []; // Reset players
+		Player.saveAll(this.allPlayers);
+		setTimeout(() => {
+			this.message.delete();
+		}, 4_000);
+	}
+
+	bankBj(insured) {
+		let mess = `💸 💰 Bank 🏦 💸 | ${this.bank.join(' | ')} (BlackJack)\n`;
+		this.players.forEach(p => {
+			if(insured.includes(p)) {
+				p.balance += p.bet + p.bet/2 // Returns the bet and the insurance
+				mess += `🦺 | ${p.user} | Bet & Insurance returned ${p.bet + p.bet/2}\n`;
+			}else {
+				mess += `☠️ | ${p.user} | Bet lost (${p.bet})`;
+			}
+		});
+		this.channel.send(mess).then(m => {
+			setTimeout(() => {
+				m.delete();
+			}, 5_000);
 		});
 	}
 
@@ -274,7 +320,8 @@ class BlackJack {
 		}else if(r.emoji.identifier === '2%EF%B8%8F%E2%83%A3') { // Double down
 			this.double(currentPlayer);
 		}else if(r.emoji.identifier === '%E2%86%94%EF%B8%8F') { // Split
-
+			if(!currentPlayer.splitted && currentPlayer.cards.length === 2 && Deck.getVal(currentPlayer.cards[0]) === Deck.getVal(currentPlayer.cards[1]))
+			this.split(currentPlayer);
 		}
 		this.update(); // Updates the message
 		if(this.choosing >= this.players.length) collector.stop('dealEnd'); // If the last player has chosen his action, stop the collector
@@ -303,6 +350,16 @@ class BlackJack {
 		player.stand = true; // Stand the player
 		++this.choosing; // Increment choosing player
 		this.update(); // Updates the message
+	}
+
+	split(player) {
+		let indexPlayer = this.players.indexOf(player);
+		this.players.splice(indexPlayer + 1, 0, player) // Duplicate the player
+		console.log(this.players);
+		player.splitCards = [player.cards[1], this.deck.c.shift()]; // Set the 2nd card and a new card for the splitted hand
+		player.cards = [player.cards[0], this.deck.c.shift()]; // Keeps only one card and pick a new card for the first array
+		player.splitted = true;
+		console.log(player);
 	}
 
 	update() {
@@ -359,12 +416,21 @@ class BlackJack {
 	toString() {
 		let bankVal = this.calcVal();
 		let ret = `💸 💰 Bank 🏦 💸 | ${this.bank[0]}${this.bankReveal ? ' | ' + this.bank.slice(1).join(' | ') : ''} (${bankVal > 21 ? bankVal +  ` BUST` : bankVal})\n`; // Bank cards
+		let alreadyStringed = [];
 		this.players.forEach(p => {
 			// ☠️ 🔴 🟢
-			let turnemoji = this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
-			let val = p.calcVal();
-			if(val > 21) turnemoji = '☠️';
-			ret += `${turnemoji} ${p.user} | ${p} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
+			if(p.splitted && alreadyStringed.includes(p)) {
+				let turnemoji = this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
+				let val = p.calcVal(p.splitCards, p.splitVal, p.splitStand);
+				if(val > 21) turnemoji = '☠️';
+				ret += `${turnemoji} ${p.user} | ${p.splitCardsToString()} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
+			}else {
+				let turnemoji = this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
+				let val = p.calcVal();
+				if(val > 21) turnemoji = '☠️';
+				ret += `${turnemoji} ${p.user} | ${p} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
+				if(p.splitted) alreadyStringed.push(p);
+			}
 		});
 		return ret; // Returns the string builded
 	}
