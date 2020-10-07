@@ -9,28 +9,46 @@ const bot = new Discord.Client();
 bot.on('ready', () => {
 	console.log(`Connected as ${bot.user.tag}`);
 })
-var game = null;
+var games = [];
 bot.on('message', message => {
 
 	if(message.author.bot) return;
 
+	let isInGameChannel = false;
+	let game = null;
+	games.forEach(g => {
+		if(g.channel.id === message.channel.id) {
+			isInGameChannel = true;
+			game = g;
+		}
+	});
+
 	if(message.content === 'bjstart' && game === null) {
 		message.delete();
-		game = new BlackJack(message);
+		games.push(new BlackJack(message));
 	}
 
+	if(game === null) return;
+
+	if(message.content === 'bal') {
+		if(message.channel.type === 'text') message.delete();
+		message.reply(game.getBalance(message.author));
+		return;
+	}
+
+	if(!isInGameChannel) return;
+
+	message.delete();
+
 	if(message.content.startsWith('bet') && !game.dealing) {
-		message.delete();
 		game.bet(message);
 	}
 
 	if(message.content === 'deal' && !game.dealing) {
-		message.delete();
 		game.deal();
 	}
 
 	if(message.content === 'cancelbet' && !game.dealing) {
-		message.delete();
 		game.cancelBet(message.author);
 	}
 });

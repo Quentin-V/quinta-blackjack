@@ -2,9 +2,9 @@ const Deck = require('./cards.js');
 const Player = require('./player.js');
 const Discord = require('discord.js');
 
-const DEBUG = false;
-const BANK_CARDS = ['Ten :spades:', 'Five :hearts:'];
-const PLAYER_CARDS = ['Ten :diamonds:', 'Ten :spades:'];
+const DEBUG = true;
+const BANK_CARDS = ['Ten :spades:', 'Ten :hearts:'];
+const PLAYER_CARDS = ['Ace :diamonds:', 'Nine :spades:'];
 
 class BlackJack {
 	constructor(message) {
@@ -136,38 +136,31 @@ class BlackJack {
 						let win = [];
 						let lose = [];
 						let push = [];
-						if(bankVal > 21) { // Bank busted
-							bj.players.forEach(p => {
-								if(isNaN(p.val) && !p.val.includes('BlackJack')) p.val =  parseInt(p.val.split('/')[1], 10);
-								if(isNaN(p.val) && p.val.includes('BlackJack')) {
-									p.balance += 2.5 * p.bet;
-									win.push(p);
-								}else if(p.val <= 21) { // If the player did not bust
-									p.balance += 2 * p.bet;
-									win.push(p);
-								}else { // The player busted
-									lose.push(p);
-								}
-							});
-						}else { // Bank did not bust
-							bj.players.forEach(p => {
-								if(isNaN(p.val)) {
-									if(p.val.includes('BlackJack')) { // Blackjack
+
+						bj.players.forEach(p => {
+							if(isNaN(p.val) && !p.val.includes('BlackJack')) p.val =  parseInt(p.val.split('/')[1], 10);
+							if(isNaN(p.val) && p.val.includes('BlackJack')) {
+								p.balance += 2.5 * p.bet;
+								win.push(p);
+							}else if(bankVal > 21) { // Bank busted
+									if(p.val <= 21) { // If the player did not bust
+										p.balance += 2 * p.bet;
 										win.push(p);
-										p.balance += 2.5 * p.bet;
+									}else { // The player busted
+										lose.push(p);
 									}
-									else p.val = p.val.split('/')[1];
-								}else if(p.val > bankVal) {
-									p.balance += 2 * p.bet; // Normal win
-									win.push(p);
-								}else if(p.val === bankVal) {
-									p.balance += p.bet; // Push
-									push.push(p);
-								}else {
-									lose.push(p); // If lose, just add the player to lose array
-								}
-							});
-						}
+							}else { // Bank did not bust
+									if(p.val > bankVal && p.val <= 21) {
+										p.balance += 2 * p.bet; // Normal win
+										win.push(p);
+									}else if(p.val === bankVal && p.val <= 21) {
+										p.balance += p.bet; // Push
+										push.push(p);
+									}else {
+										lose.push(p); // If lose, just add the player to lose array
+									}
+							}
+						});
 
 						bj.editWin(win, lose, push, bankVal).then(msg => {
 							setTimeout(() => {
@@ -194,7 +187,7 @@ class BlackJack {
 					}else if(lose.includes(p)) {
 						mess += `☠️ | ${p.user} loses his bet of ${p.bet}\n`;
 					}else if(push.includes(p)){
-						mess += `↕️ | ${p.user} push and get his bet back (${p.bet})\n`;
+						mess += `↕️ | ${p.user} push and get their bet back (${p.bet})\n`;
 					}else {
 						console.log(`Error, ${p.user.tag} not found in win, lose or push`);
 					}
@@ -434,6 +427,15 @@ class BlackJack {
 	cancelBet(user) {
 		this.players = this.players.filter(p => p.user.id !== user.id);
 		this.updateBetters();
+	}
+
+	getBalance(user) {
+		let player = this.allPlayers.find(p => p.user.id === user.id);
+		if(player !== undefined) {
+			return `Your current balance is ${player.balance}`;
+		}else {
+			return `Player not found in memory, you'll start with 10 000, to place a bat, type bet in the game channel`;
+		}
 	}
 
 	toString() {
