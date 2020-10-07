@@ -62,7 +62,7 @@ class BlackJack {
 
 	insurance(thisDealCollector) {
 		this.wait = true;
-		this.channel.send(`The bank has an Ace, would you like to take the insurance ?\n(You have 20 seconds to choose)`).then(m => {
+		this.channel.send(`The bank has an Ace, would you like to take the insurance (or Even Money) ?\n(You have 20 seconds to choose)`).then(m => {
 			m.react('✅');
 			m.react('❎');
 			let filter = (r, u) => !u.bot;
@@ -78,9 +78,15 @@ class BlackJack {
 				++hasChosen;
 				if(r.emoji.name === '✅') {
 					if(playerIns.balance >= playerIns.bet / 2) { // If the player can pay insurance
-						playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
-						insured.push(playerIns);
-						m.edit(m.content + `\n${playerIns.user} took the insurance.`);
+						if(playerIns.val === `21 BlackJack`) {
+							m.edit(m.content + `\n${playerIns.user} has a BlackJack and takes Even Money`);
+							playerIns.balance += playerIns.bet;
+							this.players = this.players.filter(p => p !== playerIns);
+						}else {
+							playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
+							insured.push(playerIns);
+							m.edit(m.content + `\n${playerIns.user} took the insurance.`);
+						}
 					}else {
 						if(!ignore.includes(playerIns)) {
 							this.channel.send(`${playerIns.user}, you can not afford the insurance.`).then(m => {
@@ -91,8 +97,6 @@ class BlackJack {
 							ignore.push(playerIns); // Add the player to the ignore list
 						}
 					}
-				}else if(r.emoji.name === '❎') {
-					++hasChosen;
 				}
 				if(hasChosen >= this.players.length) {
 					setTimeout(() => {
@@ -107,7 +111,7 @@ class BlackJack {
 					this.bankBj(insured);
 					thisDealCollector.stop('bankBj');
 				}else {
-					m.edit('The bank does not have a BlackJack'); // Inform players
+					m.edit('The bank does not have a BlackJack, you lose your insurance bet if you took it'); // Inform players
 				}
 				setTimeout(() => { // Delete the message after 5 secs
 					m.delete();
