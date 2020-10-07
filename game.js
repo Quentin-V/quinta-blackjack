@@ -2,9 +2,9 @@ const Deck = require('./cards.js');
 const Player = require('./player.js');
 const Discord = require('discord.js');
 
-const DEBUG = true;
-const BANK_CARDS = ['Ten :spades:', 'Ten :hearts:'];
-const PLAYER_CARDS = ['Ace :diamonds:', 'Nine :spades:'];
+const DEBUG = false;
+const BANK_CARDS = ['Five :spades:', 'Five :hearts:'];
+const PLAYER_CARDS = ['Eight :diamonds:', 'Eight :spades:'];
 
 class BlackJack {
 	constructor(message) {
@@ -66,7 +66,7 @@ class BlackJack {
 			m.react('✅');
 			m.react('❎');
 			let filter = (r, u) => !u.bot;
-			let insuranceColl = m.createReactionCollector(filter, {time:20_000});
+			let insuranceColl = m.createReactionCollector(filter, {time:20000});
 			let insured = [];
 			let notInsured = [];
 			let ignore = [];
@@ -86,7 +86,7 @@ class BlackJack {
 							this.channel.send(`${playerIns.user}, you can not afford the insurance.`).then(m => {
 								setTimeout(() => {
 									m.delete();
-								}, 4_000);
+								}, 4000);
 							});
 							ignore.push(playerIns); // Add the player to the ignore list
 						}
@@ -111,7 +111,7 @@ class BlackJack {
 				}
 				setTimeout(() => { // Delete the message after 5 secs
 					m.delete();
-				}, 5_000);
+				}, 5000);
 				this.wait = false; // Reset wait to false for players to be able to play
 			});
 		});
@@ -168,8 +168,8 @@ class BlackJack {
 							}, 3000);
 						});
 					}
-				}, 2_500);
-			}, 3_000);
+				}, 2500);
+			}, 3000);
 		});
 	}
 
@@ -185,7 +185,7 @@ class BlackJack {
 						else
 							mess += `💰 | ${p.user} wins ${p.bet}\n`;
 					}else if(lose.includes(p)) {
-						mess += `☠️ | ${p.user} loses his bet of ${p.bet}\n`;
+						mess += `☠️ | ${p.user} loses their bet of ${p.bet}\n`;
 					}else if(push.includes(p)){
 						mess += `↕️ | ${p.user} push and get their bet back (${p.bet})\n`;
 					}else {
@@ -280,7 +280,7 @@ class BlackJack {
 		Player.saveAll(this.allPlayers);
 		setTimeout(() => {
 			this.message.delete();
-		}, 4_000);
+		}, 4000);
 	}
 
 	bankBj(insured) {
@@ -296,7 +296,7 @@ class BlackJack {
 		this.channel.send(mess).then(m => {
 			setTimeout(() => {
 				m.delete();
-			}, 5_000);
+			}, 5000);
 		});
 	}
 
@@ -310,13 +310,17 @@ class BlackJack {
 			if(!currentPlayer.stand) {
 				currentPlayer.cards.push(this.deck.c.shift());
 				currentPlayer.calcVal(); // Recalculate the value of the player's hand
-				if(currentPlayer.stand)  // If the player has 21 or has busted
-					++this.choosing; // Next player's turn
+				if(currentPlayer.val > 21) {
+					currentPlayer.stand = true;
+					++this.choosing;
+				}
 			}else if(currentPlayer.stand && currentPlayer.splitted) {
 				currentPlayer.splitCards.push(this.deck.c.shift());
 				currentPlayer.calcVal(currentPlayer.splitCards, currentPlayer.splitStand);
-				if(currentPlayer.splitStand)
+				if(currentPlayer.splitVal > 21) {
+					currentPlayer.splitStand = true;
 					++this.choosing;
+				}
 			}
 		}else if(r.emoji.identifier === '%E2%8F%B9%EF%B8%8F') { // Stand
 			if(!currentPlayer.splitted || (currentPlayer.splitted && !currentPlayer.stand)) {
@@ -341,7 +345,7 @@ class BlackJack {
 			this.channel.send(`${player.user}, you can not double since you already picked a card.`).then(msg => {
 				setTimeout(() => {
 					msg.delete();
-				}, 5_000);
+				}, 5000);
 			});
 			return;
 		}
@@ -349,7 +353,7 @@ class BlackJack {
 			this.channel.send(`${player.user}, you can not afford to double.`).then(msg => {
 				setTimeout(() => {
 					msg.delete();
-				}, 5_000);
+				}, 5000);
 			});
 			return;
 		}
@@ -366,7 +370,7 @@ class BlackJack {
 			this.channel.send(`${player.user}, you can not afford to split.`).then(m => {
 				setTimeout(function () {
 					m.delete();
-				}, 3_000);
+				}, 3000);
 			});
 			return;
 		}
