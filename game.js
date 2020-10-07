@@ -277,6 +277,7 @@ class BlackJack {
 		this.players.forEach(p => { // Reset the cards and bet of each player
 			p.bet = 0;
 			p.val = 0;
+			p.splitVal = 0;
 			p.cards = [];
 			p.stand = false;
 			p.splitted = false;
