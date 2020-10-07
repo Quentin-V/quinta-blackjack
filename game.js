@@ -2,8 +2,8 @@ const Deck = require('./cards.js');
 const Player = require('./player.js');
 const Discord = require('discord.js');
 
-const DEBUG = true;
-const BANK_CARDS = ['Eight :spades:', 'Ten :hearts:'];
+const DEBUG = false;
+const BANK_CARDS = ['Ten :spades:', 'Five :hearts:'];
 const PLAYER_CARDS = ['Ten :diamonds:', 'Ten :spades:'];
 
 class BlackJack {
@@ -139,7 +139,7 @@ class BlackJack {
 						if(bankVal > 21) { // Bank busted
 							bj.players.forEach(p => {
 								if(isNaN(p.val) && !p.val.includes('BlackJack')) p.val =  parseInt(p.val.split('/')[1], 10);
-								if(p.val.includes('BlackJack')) {
+								if(isNaN(p.val) && p.val.includes('BlackJack')) {
 									p.balance += 2.5 * p.bet;
 									win.push(p);
 								}else if(p.val <= 21) { // If the player did not bust
@@ -187,7 +187,7 @@ class BlackJack {
 			bj.players.forEach(p => {
 				if(p.bet > 0) {
 					if(win.includes(p)) {
-						if(isNaN(p) && p.val.includes('BlackJack'))
+						if(isNaN(p.val) && p.val.includes('BlackJack'))
 							mess += `💰 | ${p.user} wins ${p.bet*1.5} (BlackJack)\n`;
 						else
 							mess += `💰 | ${p.user} wins ${p.bet}\n`;
@@ -278,7 +278,9 @@ class BlackJack {
 			p.bet = 0;
 			p.val = 0;
 			p.cards = [];
+			p.stand = false;
 			p.splitted = false;
+			p.splitStand = false;
 		});
 		this.players = []; // Reset players
 		Player.saveAll(this.allPlayers);
@@ -311,11 +313,24 @@ class BlackJack {
 		if(this.wait) return;
 		if(u.id !== currentPlayer.user.id) return;
 		if(r.emoji.identifier === '%E2%A4%B5%EF%B8%8F') { // Hit
-			currentPlayer.cards.push(this.deck.c.shift());
-			currentPlayer.calcVal(); // Recalculate the value of the player's hand
-			if(currentPlayer.stand)  // If the player has 21 or has busted
-				++this.choosing; // Next player's turn
+			if(!currentPlayer.stand) {
+				currentPlayer.cards.push(this.deck.c.shift());
+				currentPlayer.calcVal(); // Recalculate the value of the player's hand
+				if(currentPlayer.stand)  // If the player has 21 or has busted
+					++this.choosing; // Next player's turn
+			}else if(currentPlayer.stand && currentPlayer.splitted) {
+				currentPlayer.splitCards.push(this.deck.c.shift());
+				currentPlayer.calcVal(currentPlayer.splitCards, currentPlayer.splitStand);
+				if(currentPlayer.splitStand)
+					++this.choosing;
+			}
 		}else if(r.emoji.identifier === '%E2%8F%B9%EF%B8%8F') { // Stand
+			if(!currentPlayer.splitted || (currentPlayer.splitted && !currentPlayer.stand)) {
+				currentPlayer.stand = true;
+			}else if(currentPlayer.splitted && currentPlayer.stand) {
+				currentPlayer.splitStand = true;
+			}
+			//currentPlayer.stand = true;
 			++this.choosing;
 		}else if(r.emoji.identifier === '2%EF%B8%8F%E2%83%A3') { // Double down
 			this.double(currentPlayer);
@@ -353,13 +368,20 @@ class BlackJack {
 	}
 
 	split(player) {
+		if(player.balance < player.bet) {
+			this.channel.send(`${player.user}, you can not afford to split.`).then(m => {
+				setTimeout(function () {
+					m.delete();
+				}, 3_000);
+			});
+			return;
+		}
+		player.balance -= player.bet;
 		let indexPlayer = this.players.indexOf(player);
 		this.players.splice(indexPlayer + 1, 0, player) // Duplicate the player
-		console.log(this.players);
 		player.splitCards = [player.cards[1], this.deck.c.shift()]; // Set the 2nd card and a new card for the splitted hand
 		player.cards = [player.cards[0], this.deck.c.shift()]; // Keeps only one card and pick a new card for the first array
 		player.splitted = true;
-		console.log(player);
 	}
 
 	update() {
@@ -420,8 +442,8 @@ class BlackJack {
 		this.players.forEach(p => {
 			// ☠️ 🔴 🟢
 			if(p.splitted && alreadyStringed.includes(p)) {
-				let turnemoji = this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
-				let val = p.calcVal(p.splitCards, p.splitVal, p.splitStand);
+				let turnemoji = p.stand && !p.splitStand ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
+				let val = p.calcVal(p.splitCards, p.splitStand);
 				if(val > 21) turnemoji = '☠️';
 				ret += `${turnemoji} ${p.user} | ${p.splitCardsToString()} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
 			}else {
