@@ -82,8 +82,8 @@ class Player {
 		return this.splitCards.join(' | ');
 	}
 
-	calcVal(cards = this.cards, val = this.val, stand = this.stand) {
-		val = 0; // Reset val
+	calcVal(cards = this.cards, stand = this.stand) {
+		let val = 0; // Reset val
 		let ace = false; // Set ace
 
 		cards.forEach(c => { // To check each card
@@ -103,6 +103,11 @@ class Player {
 			stand = true;
 			if(val === `11/21` && cards.length === 2) // If the player has a BlackJack
 				val = `21 BlackJack`; // Change value
+		}
+		if(cards === this.cards) {
+			this.val = val;
+		}else {
+			this.splitVal = val;
 		}
 		return val;
 	}
