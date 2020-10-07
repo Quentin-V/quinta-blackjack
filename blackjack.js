@@ -39,15 +39,15 @@ bot.on('message', message => {
 		return;
 	}
 
-	if(message.content.startsWith('bet') && !game.dealing) { // Place a bet
+	if(message.content.startsWith('bet')) { // Place a bet
 		game.bet(message);
 	}
 
-	if(message.content === 'cancelbet' && !game.dealing) { // Cancel a bet
+	if(message.content === 'cancelbet') { // Cancel a bet
 		game.cancelBet(message.author);
 	}
 
-	if(message.content === 'deal' && !game.dealing) { // Start dealing
+	if(message.content === 'deal') { // Start dealing
 		game.deal();
 	}
 
