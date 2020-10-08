@@ -17,25 +17,7 @@ class Player {
 		this.splitStand = false;
 	}
 
-	loadUser(user) {
-		return new Promise((resolve, reject) => {
-			fs.exists('./save.json', exists => {
-				if(exists) {
-					let content = fs.readFileSync('./save.json');
-					let jsonContent = JSON.parse(content);
-					jsonContent.forEach(player => {
-						if(player.user.id === user.id) {
-							this.balance = player.balance;
-							resolve(player);
-						}
-					});
-					resolve(null);
-				}
-			});
-		});
-	}
-
-	static loadAll() {
+	static loadAll() { // Loads data from all players form the save file
 		let all = [];
 		let content = fs.readFileSync('./save.json');
 		let jsonContent = JSON.parse(content);
@@ -45,44 +27,35 @@ class Player {
 		return all;
 	}
 
-	static saveAll(players) {
-		fs.exists('./save.json', exists => {
-			if(!exists) Player.createSaveFile();
-			fs.writeFileSync('./save.json', JSON.stringify(players, null, 4), 'utf8');
+	static saveAll(players) { // Save all players into the save file
+		fs.writeFileSync('./save.json', JSON.stringify(players, null, 4), 'utf8');
+	}
+
+	save() { // Save a specific player into the save file
+		fs.readFile('./save.json', (err, data) => {
+			let found = false;
+			// If the file doesn't exists, creates the file
+			let jsonData = err && err.errno === -4058 ? Player.createSaveFile() : JSON.parse(data);
+			jsonData.forEach(s => {
+				if(s.user.id === this.user.id) {
+					s.balance = this.balance;
+					found = true;
+				}
+			})
+			if(!found) jsonData.push(this); // If the player is not in the save, adds the player to the save
+			fs.writeFileSync('./save.json', JSON.stringify(jsonData, null, 4), 'utf8');
 		});
 	}
 
-	save() {
-		fs.exists('./save.json', exists => {
-			if(!exists)
-				Player.createSaveFile(this);
-			fs.readFile('./save.json', (err, data) => {
-				if(err) throw err;
-				let jsonData = JSON.parse(data);
-				let changed = false;
-				jsonData.forEach(s => {
-					console.log(s);
-					console.log(s.user.id);
-					if(s.user.id === this.user.id) {
-						s.balance = this.balance;
-						changed = true;
-					}
-				})
-				if(!changed) jsonData.push(this);
-				fs.writeFileSync('./save.json', JSON.stringify(jsonData, null, 4), 'utf8');
-			});
-		});
-	}
-
-	toString() {
+	toString() { // Returns the payer cards separated by |
 		return this.cards.join(' | ');
 	}
 
-	splitCardsToString() {
+	splitCardsToString() { // Tostring with cards from the split hand
 		return this.splitCards.join(' | ');
 	}
 
-	calcVal(cards = this.cards, stand = this.stand) {
+	calcVal(cards = this.cards, stand = this.stand) { // Calculates the value of the hand and save it in the variable
 		let val = 0; // Reset val
 		let ace = false; // Set ace
 
@@ -112,8 +85,9 @@ class Player {
 		return val;
 	}
 
-	static createSaveFile(p) {
+	static createSaveFile(p) { // Creates the save file if needed
 		fs.writeFileSync('./save.json', '[]', 'utf8');
+		return '[]';
 	}
 }
 
