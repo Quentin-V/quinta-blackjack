@@ -9,17 +9,20 @@ const PLAYER_CARDS = [];
 class BlackJack {
 	constructor(message) {
 		this.allPlayers = Player.loadAll(); // The array containing all known players
-		this.players = []; // The active players of the deal
-		this.choosing = 0; // The index of the player choosing their action
-		this.dealing = false; // If there is a deal in progress
-		this.deck = new Deck(6); // The deck of the game
-		this.channel = message.channel; // The discord cahnnel of the game
-		this.message = message; // The message of the current deal
 		this.betters = null; // The betters message shown before the deal
 		this.bank = []; // The bank cards
+		this.players = []; // The active players of the deal
+		this.choosing = 0; // The index of the player choosing their action
+
+		this.deck = new Deck(6); // The deck of the game
+
+		this.channel = message.channel; // The discord cahnnel of the game
+		this.message = message; // The message of the current deal
+
+		this.dealing = false; // If there is a deal in progress
+		this.wait = false; // Idk I don't remember
 		this.bankReveal = false; // If the bank cards should be displayed in the message
 		this.changeShoe = false; // If the deck has to be changed on next deal
-		this.wait = false; // Idk I don't remember
 	}
 
 	/***********************************/
@@ -206,7 +209,7 @@ class BlackJack {
 
 		// If the player is standing, increment the index of choosing player
 		while(!this.players[this.choosing].splitted && this.players[this.choosing].stand || this.players[this.choosing].splitted && this.players[this.choosing].splitStand) {
-			++this.choosing;
+			if(this.players[++this.choosing] === undefined) break;
 		}
 
 		this.update(); // Updates the message
@@ -312,17 +315,19 @@ class BlackJack {
 				}
 			});
 			insuranceColl.on('end', (c, r) => {
+				let reason = null;
 				m.reactions.removeAll();
 				if(Deck.getVal(this.bank[1]) === 10) { // The bank has a blackjack
 					m.edit(`The bank has a BlackJack, you lose your bet if you're not insured.`); // Inform players
 					this.bankBj(insured);
-					thisDealCollector.stop('bankBj');
+					reason = 'bankBj';
 				}else { // The bank does not have a bj
 					m.edit('The bank does not have a BlackJack, you lose your insurance bet if you took it'); // Inform players
-					if(this.choosing >= this.players.length) thisDealCollector.stop('dealEnd');
+					if(this.choosing >= this.players.length) reason = 'dealEnd';
 				}
 				setTimeout(() => { // Delete the message after 5 secs
 					m.delete();
+					if(reason !== null) thisDealCollector.stop(reason);
 				}, 5000);
 				this.wait = false; // Reset wait to false for players to be able to play
 			});
@@ -375,9 +380,14 @@ class BlackJack {
 						bj.players.forEach(p => {
 							// If player has an Ace, takes the highest value
 							if(isNaN(p.val) && !p.val.includes('BlackJack')) p.val =  parseInt(p.val.split('/')[1], 10);
-							if(isNaN(p.val) && p.val.includes('BlackJack')) { // If the player has a bj
-								p.balance += 2.5 * p.bet;
-								win.push(p);
+							if(isNaN(p.val) && p.val.includes('BlackJack')) { // If the player has a natural bj
+								if(bankVal === 21 && bj.bank.length === 2) { // The bank also has a natural
+									p.balance += p.bet;
+									push.push(p);
+								}else { // No natural for the bank
+									p.balance += 2.5 * p.bet;
+									win.push(p);
+								}
 							}else if(bankVal > 21) { // Bank busted
 									if(p.val <= 21) { // If the player did not bust
 										p.balance += 2 * p.bet;
