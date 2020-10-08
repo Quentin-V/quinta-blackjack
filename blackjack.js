@@ -55,7 +55,7 @@ bot.on('message', message => {
 		let sortedPlayers = game.allPlayers.slice().sort((p1, p2) => p2.balance - p1.balance);
 		sortedPlayers.splice(10);
 		let msgText = `Top 10 players :\n`;
-		sortedPlayers.forEach(p => msgText += `\t${p.user} | ${p.balance}💰`);
+		sortedPlayers.forEach(p => msgText += `\t<@${p.user.id}> | ${p.balance}💰`);
 		message.channel.send(msgText);
 	}
 
@@ -63,7 +63,7 @@ bot.on('message', message => {
 	if(message.author.id === '184331142286147584' && (message.content.startsWith('give') || message.content.startsWith('set'))) {
 		let amount = parseInt(message.content.split(' ')[2]);
 		let user = message.mentions.users.array()[0];
-		let player = game.players.find(p => p.user.id === user.id);
+		let player = game.allPlayers.find(p => p.user.id === user.id);
 		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
 		player.save();
 	}
