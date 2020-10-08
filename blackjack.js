@@ -65,6 +65,7 @@ bot.on('message', message => {
 		let user = message.mentions.users.array()[0];
 		let player = game.players.find(p => p.user.id === user.id);
 		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
+		player.save();
 	}
 
 
