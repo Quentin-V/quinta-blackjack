@@ -508,7 +508,7 @@ class BlackJack {
 		if(player !== undefined) {
 			return `Your current balance is ${player.balance}`;
 		}else {
-			return `Player not found in memory, you'll start with 10 000, to place a bat, type bet in the game channel`;
+			return `Player not found in memory, you'll start with 10 000, to place a bet, type bet in the game channel`;
 		}
 	}
 
