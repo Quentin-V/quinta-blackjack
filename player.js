@@ -3,32 +3,42 @@ const Deck = require('./cards.js');
 
 class Player {
 	constructor(user, balance = 10000) {
-		this.user = user;
-		this.balance = balance;
-		this.cards = [];
-		this.bet = 0;
-		this.val = 0;
+		this.user = user; // The discord user linked to the player
+		this.balance = balance; // The balance of the player
 
-		this.splitCards = [];
-		this.splitted = false;
-		this.splitVal = 0;
+		this.bet = 0; // The current bet of the player
+		this.splitted = false; // If the player decided to split his hand
 
-		this.stand = false;
-		this.splitStand = false;
+		this.cards = []; // The cards oof the player
+		this.val = 0; // The value of the hand
+		this.stand = false; // If the player is standing
+
+		this.splitCards = []; // The cards of the splitted hand is there is one
+		this.splitVal = 0; // The value of the splitted hand
+ 		this.splitStand = false; // If the splitted hand is standing
 	}
 
-	static loadAll() { // Loads data from all players form the save file
+	static loadAll() { // Loads data from all players from the save file
 		let all = [];
-		let content = fs.readFileSync('./save.json');
-		let jsonContent = JSON.parse(content);
-		jsonContent.forEach(player => {
+		let jsonContent;
+		try { // Will read the content of the save file and create one if there is not existing
+			jsonContent = JSON.parse(fs.readFileSync('./save.json'));
+		}catch(err) {
+			if(err.code === 'ENOENT')
+				jsonContent = Player.createSaveFile();
+		}
+		jsonContent.forEach(player => { // Creates the player objects
 			all.push(new Player(player.user, player.balance));
 		});
 		return all;
 	}
 
 	static saveAll(players) { // Save all players into the save file
-		fs.writeFileSync('./save.json', JSON.stringify(players, null, 4), 'utf8');
+		let minPlayers = [];
+		players.forEach(p => { // Reduce the size of the Player object for a minimized save file
+			minPlayers.push({user: {id: p.user.id, tag: p.user.tag}, balance: p.balance});
+		})
+		fs.writeFileSync('./save.json', JSON.stringify(minPlayers, null, 4), 'utf8');
 	}
 
 	save() { // Save a specific player into the save file
@@ -87,7 +97,7 @@ class Player {
 
 	static createSaveFile(p) { // Creates the save file if needed
 		fs.writeFileSync('./save.json', '[]', 'utf8');
-		return '[]';
+		return [];
 	}
 }
 
