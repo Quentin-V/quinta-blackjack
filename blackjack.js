@@ -35,8 +35,11 @@ bot.on('message', message => {
 
 	if(message.content === 'bal') { // Displays the balance of the user sending the message
 		if(message.channel.type === 'text') message.delete();
-		message.reply(game.getBalance(message.author));
-		return;
+		message.reply(game.getBalance(message.author)).then(m => {
+			setTimeout(() => { // Deletes the message after 2 minutes
+				m.delete()
+			}, 120000);
+		});
 	}
 
 	if(message.content.startsWith('bet')) { // Place a bet
@@ -56,7 +59,11 @@ bot.on('message', message => {
 		sortedPlayers.splice(10);
 		let msgText = `Top 10 players :\n`;
 		sortedPlayers.forEach(p => msgText += `\t<@${p.user.id}> | ${p.balance}💰\n`);
-		message.channel.send(msgText);
+		message.channel.send(msgText).then(m => {
+			setTimeout(() => { // Deletes the message after 2 minutes
+				m.delete()
+			}, 120000);
+		});
 	}
 
 	// Admin command to give/set balance for a player
@@ -67,7 +74,6 @@ bot.on('message', message => {
 		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
 		player.save();
 	}
-
 
 });
 
