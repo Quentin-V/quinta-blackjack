@@ -55,7 +55,7 @@ bot.on('message', message => {
 		let sortedPlayers = game.allPlayers.slice().sort((p1, p2) => p2.balance - p1.balance);
 		sortedPlayers.splice(10);
 		let msgText = `Top 10 players :\n`;
-		sortedPlayers.forEach(p => msgText += `\t<@${p.user.id}> | ${p.balance}💰`);
+		sortedPlayers.forEach(p => msgText += `\t<@${p.user.id}> | ${p.balance}💰\n`);
 		message.channel.send(msgText);
 	}
 
