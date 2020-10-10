@@ -40,7 +40,7 @@ class BlackJack {
 			return;
 		}
 		let amount = parseInt(msg.content.split(' ')[1], 10); // Get the amount of the bet
-		if(amount < 0 || amount % 100 !== 0) {
+		if(amount < 0 || amount % 100 !== 0) { // Incorrect bet amount
 			msg.reply('your bet must be a positive integer and a multiple of 100').then(m => {
 				setTimeout(() => {
 					m.delete();
@@ -77,7 +77,7 @@ class BlackJack {
 	}
 
 	updateBetters() { // Updates the message with the betters
-		let bets = `Bets : \n`;
+		let bets = `Bets (Dealing in 15 seconds) : \n`;
 		this.players.forEach(p => {
 			bets += `\t${p.user} | ${p.bet}\n`;
 		});
@@ -88,8 +88,22 @@ class BlackJack {
 			}else { // Edit the betters message
 				this.betters.edit(bets); // Edit the message
 			}
-		}else {
- 			this.channel.send(bets).then(betters => this.betters = betters); // Sends a new message
+		}else { // Sends a new message and creates before dealing interval
+ 			this.channel.send(bets).then(betters => {
+				this.betters = betters
+				setTimeout(() => {
+					if(this.dealing) return;
+					this.betters.edit(this.betters.content.replace(/[0-9]{2}/, '10'));
+					setTimeout(() => {
+						if(this.dealing) return;
+						this.betters.edit(this.betters.content.replace(/[0-9]{2}/, '5'));
+						setTimeout(() => {
+							if(this.dealing) return;
+							this.deal();
+						}, 5000);
+					}, 5000);
+				}, 5000);
+			});
 		}
 	}
 
