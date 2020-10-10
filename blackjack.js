@@ -32,7 +32,7 @@ bot.on('message', message => {
 	if(game === null) return; // If no new game has been found,
 
 	message.delete(); // Deletes the message
-
+	
 	if(message.content.startsWith('bet')) { // Place a bet
 		game.bet(message);
 	}
