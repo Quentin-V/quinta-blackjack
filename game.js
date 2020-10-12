@@ -24,7 +24,7 @@ class BlackJack {
 		this.wait = false; // Idk I don't remember
 		this.bankReveal = false; // If the bank cards should be displayed in the message
 		this.changeShoe = false; // If the deck has to be changed on next deal
-
+		logger.log(`Created game in channel ${this.channel.name} (${this.channel.id})`);
 	}
 
 	/***********************************/
@@ -133,8 +133,8 @@ class BlackJack {
 
 	deal() { // To start the dealing process
 		if(this.dealing) return;
-		logger.log(`Starting to deal`);
 		if(this.betters === null || this.players.length === 0) return; // If no one is betting
+		logger.log(`Starting to deal`);
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
 
