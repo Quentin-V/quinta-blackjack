@@ -44,7 +44,6 @@ bot.on('message', message => {
 	}
 
 	if(message.content === 'bal') { // Displays the balance of the user sending the message
-		if(message.channel.type === 'text') message.delete();
 		message.reply(game.getBalance(message.author)).then(m => {
 			setTimeout(() => { // Deletes the message after 2 minutes
 				m.delete()
