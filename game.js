@@ -215,6 +215,7 @@ class BlackJack {
 		if(currentPlayer.user.id !== u.id) return; // If the reactor is not the current player returns
 		if(this.wait) return; // If have to wait (insurance)
 		if(r.emoji.identifier === '%E2%A4%B5%EF%B8%8F') { // Hit
+			logger.log(`${currentPlayer.user.tag} hits`);
 			if(!currentPlayer.stand) { // If the player is not standing (needed in case of a split)
 				currentPlayer.cards.push(this.deck.c.shift()); // Adds a card to the player hand
 				currentPlayer.calcVal(); // Recalculate the value of the player's hand
@@ -229,6 +230,7 @@ class BlackJack {
 				}
 			}
 		}else if(r.emoji.identifier === '%E2%8F%B9%EF%B8%8F') { // Stand
+			logger.log(`${currentPlayer.user.tag} stands`);
 			if(!currentPlayer.splitted || (currentPlayer.splitted && !currentPlayer.stand)) {
 				currentPlayer.stand = true;
 			}else if(currentPlayer.splitted && currentPlayer.stand) {
@@ -252,7 +254,7 @@ class BlackJack {
 	}
 
 	split(player) { // To split a player hand
-		if(player.balance < player.bet) {
+		if(player.balance < player.bet) { // If can't afford
 			this.channel.send(`${player.user}, you can not afford to split.`).then(m => {
 				setTimeout(() => {
 					m.delete();
@@ -260,6 +262,7 @@ class BlackJack {
 			});
 			return;
 		}
+		logger.log(`${currentPlayer.user.tag} splits`);
 		player.balance -= player.bet; // Removes the bet again for the second hand
 		let indexPlayer = this.players.indexOf(player); // Get the index of the player
 		this.players.splice(indexPlayer + 1, 0, player) // Duplicate the player
@@ -289,6 +292,7 @@ class BlackJack {
 			});
 			return;
 		}
+		logger.log(`${currentPlayer.user.tag} doubles`);
 		player.cards.push(this.deck.c.shift()) // Pick one card
 		player.balance -= player.bet; // Removes the bet another time
 		player.bet *= 2; // Double the bet value
@@ -417,11 +421,12 @@ class BlackJack {
 						let win = [];
 						let lose = [];
 						let push = [];
-
 						bj.players.forEach(p => {
+							let alreadyHandled = win.includes(p) || lose.includes(p) || push.includes(p);
+							let goodVal = alreadyHandled && p.splitted ? p.val : p.splitVal; // To handle splitted players
 							// If player has an Ace, takes the highest value
-							if(isNaN(p.val) && !p.val.includes('BlackJack')) p.val =  parseInt(p.val.split('/')[1], 10);
-							if(isNaN(p.val) && p.val.includes('BlackJack')) { // If the player has a natural bj
+							if(isNaN(goodVal) && !goodVal.includes('BlackJack')) goodVal =  parseInt(goodVal.split('/')[1], 10);
+							if(isNaN(goodVal) && goodVal.includes('BlackJack')) { // If the player has a natural bj
 								if(bankVal === 21 && bj.bank.length === 2) { // The bank also has a natural
 									p.balance += p.bet;
 									push.push(p);
@@ -430,29 +435,29 @@ class BlackJack {
 									win.push(p);
 								}
 							}else if(bankVal > 21) { // Bank busted
-									if(p.val <= 21) { // If the player did not bust
-										p.balance += 2 * p.bet;
-										win.push(p);
-									}else { // The player busted
-										lose.push(p);
-									}
+								if(goodVal <= 21) { // If the player did not bust
+									p.balance += 2 * p.bet;
+									win.push(p);
+								}else { // The player busted
+									lose.push(p);
+								}
 							}else { // Bank did not bust
-									if(p.val > bankVal && p.val <= 21) {
-										p.balance += 2 * p.bet; // Normal win
-										win.push(p);
-									}else if(p.val === bankVal && p.val <= 21) {
-										p.balance += p.bet; // Push
-										push.push(p);
-									}else {
-										lose.push(p); // If lose, just add the player to lose array
-									}
+								if(goodVal > bankVal && goodVal <= 21) {
+									p.balance += 2 * p.bet; // Normal win
+									win.push(p);
+								}else if(goodVal === bankVal && goodVal <= 21) {
+									p.balance += p.bet; // Push
+									push.push(p);
+								}else {
+									lose.push(p); // If lose, just add the player to lose array
+								}
 							}
 						});
 
 						bj.editWin(win, lose, push, bankVal).then(msg => {
 							setTimeout(() => {
 								resolve(msg);
-							}, 3000);
+							}, 2000);
 						});
 					}
 				}, 2500);
@@ -465,23 +470,32 @@ class BlackJack {
 		let bj = this;
 		return new Promise((resolve, reject) => {
 			let mess = `💸 💰 Bank 🏦 💸 | ${bj.bank.join(' | ')} (${bankVal > 21 ? bankVal +  ` BUST` : bankVal})\n`;
+			let alreadyHandled = []; // Used with splitted hands
 			bj.players.forEach(p => {
-				logger.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val}) -- ${p.splitCards} (${p.splitVal})`);
-				if(win.includes(p)) {
+				if(alreadyHandled.includes(p)) { // If the player has already been on the loop before
+					logger.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val})`);
+				}else { // Else it's the 2nd hand of the player
+					logger.log(`${p.user.tag} (${p.user.id}) : ${p.splitCards} (${p.splitVal} | Split)`);
+				}
+				if(win.includes(p)) { // If the player is in the win array
 					logger.log(`${p.user.tag} (${p.user.id}) wins | New balance : ${p.balance}`);
-					if(isNaN(p.val) && p.val.includes('BlackJack'))
+					if(isNaN(p.val) && p.val.includes('BlackJack')) // If the player has a bj
 						mess += `💰 | ${p.user} wins ${p.bet*1.5} (BlackJack)\n`;
 					else
 						mess += `💰 | ${p.user} wins ${p.bet}\n`;
-				}else if(lose.includes(p)) {
+					win.splice(win.indexOf(p), 1); // Removes the player from the win array
+				}else if(lose.includes(p)) { // If the player lost
 					logger.log(`${p.user.tag} (${p.user.id}) loses | New balance : ${p.balance}`);
 					mess += `☠️ | ${p.user} loses their bet of ${p.bet}\n`;
-				}else if(push.includes(p)){
+					lose.splice(lose.indexOf(p), 1); // Removes the player from the array
+				}else if(push.includes(p)){ // The player pushed
 					logger.log(`${p.user.tag} (${p.user.id}) push | New balance : ${p.balance}`);
 					mess += `↕️ | ${p.user} push and get their bet back (${p.bet})\n`;
+					push.splice(push.indexOf(p), 1); // Removes the player from the array
 				}else {
 					logger.log(`Error, ${p.user.tag} not found in win, lose or push`);
 				}
+				alreadyHandled.push(p); // Add the player in the array to remember it
 			});
 			bj.message.edit(mess).then(msg => resolve(msg));
 		});
@@ -527,7 +541,7 @@ class BlackJack {
 		return val;
 	}
 
-	reset(message) { // Reset all vals at the end of the game
+	reset(message) { // Reset all vals at the end of the game and deletes the game message
 		this.dealing = false;
 		this.bank = [];
 		this.choosing = 0;
@@ -561,7 +575,7 @@ class BlackJack {
 	giveSet(message) {
 		let amount = parseInt(message.content.split(' ')[2]);
 		let user = message.mentions.users.array()[0];
-		let player = game.allPlayers.find(p => p.user.id === user.id);
+		let player = this.allPlayers.find(p => p.user.id === user.id);
 		if(player === undefined) return;
 		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
 		player.save();
