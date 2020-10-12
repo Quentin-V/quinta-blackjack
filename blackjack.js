@@ -25,14 +25,11 @@ bot.on('message', message => {
 	if(message.content === 'bjstart' && game === null && message.channel.type === 'text') { // Creates a new game if no one was found
 		message.delete();
 		games.push(new BlackJack(message));
-		console.log(`Started new game in channel : ${message.channel.name}`);
 	}
 
 	if(game === null) return; // If no new game has been found,
 
 	message.delete(); // Deletes the message
-
-	console.log(`Received ${message.content} from ${message.author.tag} (${message.author.id})`);
 
 	if(message.content.startsWith('bet')) { // Place a bet
 		game.bet(message);
@@ -69,11 +66,7 @@ bot.on('message', message => {
 
 	// Admin command to give/set balance for a player
 	if(message.author.id === '184331142286147584' && (message.content.startsWith('give') || message.content.startsWith('set'))) {
-		let amount = parseInt(message.content.split(' ')[2]);
-		let user = message.mentions.users.array()[0];
-		let player = game.allPlayers.find(p => p.user.id === user.id);
-		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
-		player.save();
+		game.giveSet(message);
 	}
 
 });

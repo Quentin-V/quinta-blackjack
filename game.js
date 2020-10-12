@@ -1,6 +1,7 @@
 const Deck = require('./cards.js');
 const Player = require('./player.js');
 const Discord = require('discord.js');
+var logger = require('./logger.js');
 
 const DEBUG = false;
 const BANK_CARDS = [];
@@ -23,6 +24,7 @@ class BlackJack {
 		this.wait = false; // Idk I don't remember
 		this.bankReveal = false; // If the bank cards should be displayed in the message
 		this.changeShoe = false; // If the deck has to be changed on next deal
+
 	}
 
 	/***********************************/
@@ -78,7 +80,7 @@ class BlackJack {
 			better.bet = amount; // Setting the player's bet value
 			better.balance -= amount; // Removing the bet from the balance of the user
 			this.updateBetters(); // Update the message with the betters
-			console.log(`${msg.author.tag} (${msg.author.id}) placed a bet of ${amount} | New balance : ${better.balance}`);
+			logger.log(`${msg.author.tag} (${msg.author.id}) placed a bet of ${amount} | New balance : ${better.balance}`);
 		}
 	}
 
@@ -90,7 +92,7 @@ class BlackJack {
 		toRemove.bet = 0; // Resetting the bet variable
 		this.players = this.players.filter(p => p.user.id !== user.id); // Filters the players to remove the user
 		this.updateBetters();
-		console.log(`${user.tag} (${user.id}) removed their bet if they had one`);
+		logger.log(`${user.tag} (${user.id}) removed their bet if they had one`);
 	}
 
 	updateBetters() { // Updates the message with the betters
@@ -131,7 +133,7 @@ class BlackJack {
 
 	deal() { // To start the dealing process
 		if(this.dealing) return;
-		console.log(`Starting to deal`);
+		logger.log(`Starting to deal`);
 		if(this.betters === null || this.players.length === 0) return; // If no one is betting
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
@@ -303,7 +305,7 @@ class BlackJack {
 	/***********************************/
 
 	insurance(thisDealCollector) {
-		console.log(`Starting insurance`);
+		logger.log(`Starting insurance`);
 		this.wait = true; // Set wait to true to prevent reaction handling from principal message
 		this.channel.send(`The bank has an Ace, would you like to take the insurance (or Even Money) ?\n(You have 20 seconds to choose)`).then(m => {
 			m.react('✅'); // React
@@ -324,12 +326,12 @@ class BlackJack {
 				if(r.emoji.name === '✅') { // If the player takes the insurance
 					if(playerIns.balance >= playerIns.bet / 2) { // If the player can pay insurance
 						if(playerIns.val === `21 BlackJack`) { // If the player has a bj
-							console.log(`${p.user.tag} (${p.user.id}) takes even money`);
+							logger.log(`${p.user.tag} (${p.user.id}) takes even money`);
 							m.edit(m.content + `\n${playerIns.user} has a BlackJack and takes Even Money`); // Takes even money
 							playerIns.balance += playerIns.bet; // Pays the player
 							this.players = this.players.filter(p => p !== playerIns); // removes the player from the list
 						}else { // No blackjack, normal insurance
-							console.log(`${p.user.tag} (${p.user.id}) takes the insurance`);
+							logger.log(`${p.user.tag} (${p.user.id}) takes the insurance`);
 							playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
 							insured.push(playerIns); // Adds the player to the insured players list
 							m.edit(m.content + `\n${playerIns.user} took the insurance.`); // Inform players
@@ -355,12 +357,12 @@ class BlackJack {
 				let reason = null;
 				m.reactions.removeAll();
 				if(Deck.getVal(this.bank[1]) === 10) { // The bank has a blackjack
-					console.log(`The bank has a BlackJack`);
+					logger.log(`The bank has a BlackJack`);
 					m.edit(`The bank has a BlackJack, you lose your bet if you're not insured.`); // Inform players
 					this.bankBj(insured);
 					reason = 'bankBj';
 				}else { // The bank does not have a bj
-					console.log(`The bank does not have a BlackJack`);
+					logger.log(`The bank does not have a BlackJack`);
 					m.edit('The bank does not have a BlackJack, you lose your insurance bet if you took it'); // Inform players
 					if(this.choosing >= this.players.length) reason = 'dealEnd';
 				}
@@ -459,26 +461,26 @@ class BlackJack {
 	}
 
 	editWin(win, lose, push, bankVal) { // Edit the principal message with end deal information
-		console.log(`Deal ended, bank cards : ${this.bank} (${bankVal})`);
+		logger.log(`Deal ended, bank cards : ${this.bank} (${bankVal})`);
 		let bj = this;
 		return new Promise((resolve, reject) => {
 			let mess = `💸 💰 Bank 🏦 💸 | ${bj.bank.join(' | ')} (${bankVal > 21 ? bankVal +  ` BUST` : bankVal})\n`;
 			bj.players.forEach(p => {
-				console.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val}) -- ${p.splitCards} (${p.splitVal})`);
+				logger.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val}) -- ${p.splitCards} (${p.splitVal})`);
 				if(win.includes(p)) {
-					console.log(`${p.user.tag} (${p.user.id}) wins | New balance : ${p.balance}`);
+					logger.log(`${p.user.tag} (${p.user.id}) wins | New balance : ${p.balance}`);
 					if(isNaN(p.val) && p.val.includes('BlackJack'))
 						mess += `💰 | ${p.user} wins ${p.bet*1.5} (BlackJack)\n`;
 					else
 						mess += `💰 | ${p.user} wins ${p.bet}\n`;
 				}else if(lose.includes(p)) {
-					console.log(`${p.user.tag} (${p.user.id}) loses | New balance : ${p.balance}`);
+					logger.log(`${p.user.tag} (${p.user.id}) loses | New balance : ${p.balance}`);
 					mess += `☠️ | ${p.user} loses their bet of ${p.bet}\n`;
 				}else if(push.includes(p)){
-					console.log(`${p.user.tag} (${p.user.id}) push | New balance : ${p.balance}`);
+					logger.log(`${p.user.tag} (${p.user.id}) push | New balance : ${p.balance}`);
 					mess += `↕️ | ${p.user} push and get their bet back (${p.bet})\n`;
 				}else {
-					console.log(`Error, ${p.user.tag} not found in win, lose or push`);
+					logger.log(`Error, ${p.user.tag} not found in win, lose or push`);
 				}
 			});
 			bj.message.edit(mess).then(msg => resolve(msg));
@@ -554,6 +556,17 @@ class BlackJack {
 		}else {
 			return `Player not found in memory, you'll start with 10 000, to place a bet, type bet in the game channel`;
 		}
+	}
+
+	giveSet(message) {
+		let amount = parseInt(message.content.split(' ')[2]);
+		let user = message.mentions.users.array()[0];
+		let player = game.allPlayers.find(p => p.user.id === user.id);
+		if(player === undefined) return;
+		player.balance = message.content.startsWith('give') ? player.balance + amount : amount;
+		player.save();
+		if(message.content.startsWith('give')) logger.log(`Gave ${amount} to ${user.tag} (${user.id}) | New balance ${player.balance}`);
+		else logger.log(`Set ${amount} to ${user.tag} (${user.id}) | New balance ${player.balance}`)
 	}
 
 	toString() { // Returns the state of the game as a string with all the players, their cards and if it's their turn to choose what to do
