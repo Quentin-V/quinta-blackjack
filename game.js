@@ -48,6 +48,17 @@ class BlackJack {
 			});
 			return;
 		}
+
+		let alreadyBetting = false;
+		this.players.some(p => { // Will check if a player is already in the betters list (this.players)
+			if(p.user.id === msg.author.id) {
+				alreadyBetting = true;
+				return true;
+			}
+			return false;
+		})
+		if(alreadyBetting) return; // If the player already has a bet
+
 		let better = this.allPlayers.find(p => p.user.id === msg.author.id); // Finds the player who wants to bet
 		if(better === undefined) { // If the player is not found
 			better = new Player(msg.author); // Creates the player
@@ -67,13 +78,19 @@ class BlackJack {
 			better.bet = amount; // Setting the player's bet value
 			better.balance -= amount; // Removing the bet from the balance of the user
 			this.updateBetters(); // Update the message with the betters
+			console.log(`${msg.author.tag} (${msg.author.id}) placed a bet of ${amount} | New balance : ${better.balance}`);
 		}
 	}
 
 	cancelBet(user) { // Removes a bet from a player
 		if(this.dealing) return;
+		let toRemove = this.players.find(p => p.user.id === user.id);
+		if(toRemove === null) return;
+		toRemove.balance += toRemove.bet; // Refunding the bet
+		toRemove.bet = 0; // Resetting the bet variable
 		this.players = this.players.filter(p => p.user.id !== user.id); // Filters the players to remove the user
 		this.updateBetters();
+		console.log(`${user.tag} (${user.id}) removed their bet if they had one`);
 	}
 
 	updateBetters() { // Updates the message with the betters
@@ -114,6 +131,7 @@ class BlackJack {
 
 	deal() { // To start the dealing process
 		if(this.dealing) return;
+		console.log(`Starting to deal`);
 		if(this.betters === null || this.players.length === 0) return; // If no one is betting
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
@@ -146,9 +164,10 @@ class BlackJack {
 				p.stand = true; // Stand the player
 			}
 		});
-		this.players.forEach(p => { // Skip the first players if already standing
-			if(!p.stand) return;
+		this.players.some(p => { // Skip the first players if already standing
+			if(!p.stand) return true;
 			++this.choosing;
+			return false;
 		})
 
 		this.sendMessage().then(collector => { // Sends the message then
@@ -434,18 +453,23 @@ class BlackJack {
 	}
 
 	editWin(win, lose, push, bankVal) { // Edit the principal message with end deal information
+		console.log(`Deal ended, bank cards : ${this.bank} (${bankVal})`);
 		let bj = this;
 		return new Promise((resolve, reject) => {
 			let mess = `💸 💰 Bank 🏦 💸 | ${bj.bank.join(' | ')} (${bankVal > 21 ? bankVal +  ` BUST` : bankVal})\n`;
 			bj.players.forEach(p => {
+				console.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val}) -- ${p.splitCards} (${p.splitVal})`);
 				if(win.includes(p)) {
+					console.log(`${p.user.tag} (${p.user.id}) wins | New balance : ${p.balance}`);
 					if(isNaN(p.val) && p.val.includes('BlackJack'))
 						mess += `💰 | ${p.user} wins ${p.bet*1.5} (BlackJack)\n`;
 					else
 						mess += `💰 | ${p.user} wins ${p.bet}\n`;
 				}else if(lose.includes(p)) {
+					console.log(`${p.user.tag} (${p.user.id}) loses | New balance : ${p.balance}`);
 					mess += `☠️ | ${p.user} loses their bet of ${p.bet}\n`;
 				}else if(push.includes(p)){
+					console.log(`${p.user.tag} (${p.user.id}) push | New balance : ${p.balance}`);
 					mess += `↕️ | ${p.user} push and get their bet back (${p.bet})\n`;
 				}else {
 					console.log(`Error, ${p.user.tag} not found in win, lose or push`);

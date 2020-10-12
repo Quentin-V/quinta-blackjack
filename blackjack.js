@@ -1,5 +1,3 @@
-const Player = require('./player.js');
-const Deck = require('./cards.js');
 const Discord = require('discord.js');
 const BlackJack = require('./game.js');
 const credentials = require('./credentials.js');
@@ -24,14 +22,17 @@ bot.on('message', message => {
 		}
 	});
 
-	if(message.content === 'bjstart' && game === null) { // Creates a new game if no one was found
+	if(message.content === 'bjstart' && game === null && message.channel.type === 'text') { // Creates a new game if no one was found
 		message.delete();
 		games.push(new BlackJack(message));
+		console.log(`Started new game in channel : ${message.channel.name}`);
 	}
 
 	if(game === null) return; // If no new game has been found,
 
 	message.delete(); // Deletes the message
+
+	console.log(`Received ${message.content} from ${message.author.tag} (${message.author.id})`);
 
 	if(message.content.startsWith('bet')) { // Place a bet
 		game.bet(message);
