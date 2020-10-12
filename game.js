@@ -201,10 +201,10 @@ class BlackJack {
 			this.message.reactions.removeAll(); // Removes all the reactions form the message
 			if(r === 'dealEnd') {
 				this.bankDraw().then(msg => { // Draw for the bank then
-					this.reset();
+					this.reset(msg);
 				});
 			}else if(r === 'bankBj') { // If end on bank bj, just resets as already is already done in other methods
-				this.reset();
+				this.reset(this.message);
 			}
 		});
 	}
@@ -527,7 +527,7 @@ class BlackJack {
 		return val;
 	}
 
-	reset() { // Reset all vals at the end of the game
+	reset(message) { // Reset all vals at the end of the game
 		this.dealing = false;
 		this.bank = [];
 		this.choosing = 0;
@@ -545,8 +545,8 @@ class BlackJack {
 		this.players = [];
 		Player.saveAll(this.allPlayers); // Save the state of all players
 		setTimeout(() => {
-			this.message.delete();
-		}, 4000);
+			message.delete();
+		}, 2500);
 	}
 
 	getBalance(user) { // Get the balance of a specific user
