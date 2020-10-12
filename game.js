@@ -3,9 +3,9 @@ const Player = require('./player.js');
 const Discord = require('discord.js');
 var logger = require('./logger.js');
 
-const DEBUG = true;
-const BANK_CARDS = ['Five :hearts:','Five :hearts:'];
-const PLAYER_CARDS = ['Eight :hearts:','Eight :hearts:'];
+const DEBUG = false;
+const BANK_CARDS = [];
+const PLAYER_CARDS = [];
 
 class BlackJack {
 	constructor(message) {
@@ -42,7 +42,7 @@ class BlackJack {
 			return;
 		}
 		let amount = parseInt(msg.content.split(' ')[1], 10); // Get the amount of the bet
-		if(amount < 0 || amount % 100 !== 0) { // Incorrect bet amount
+		if(amount <= 0 || amount % 100 !== 0) { // Incorrect bet amount
 			msg.reply('your bet must be a positive integer and a multiple of 100').then(m => {
 				setTimeout(() => {
 					m.delete();
@@ -111,7 +111,7 @@ class BlackJack {
  			this.channel.send(bets).then(betters => {
 				this.betters = betters
 				setTimeout(() => {
-					if(this.dealing) return;
+					if(this.dealing || this.betters === null) return;
 					this.betters.edit(this.betters.content.replace(/[0-9]{2}/, '10'));
 					setTimeout(() => {
 						if(this.dealing) return;
@@ -203,7 +203,7 @@ class BlackJack {
 				this.bankDraw().then(msg => { // Draw for the bank then
 					this.reset(msg);
 				});
-			}else if(r === 'bankBj') { // If end on bank bj, just resets as already is already done in other methods
+			}else { // If end on bank bj, just resets as already is already done in other methods
 				this.reset(this.message);
 			}
 		});
@@ -219,13 +219,13 @@ class BlackJack {
 			if(!currentPlayer.stand) { // If the player is not standing (needed in case of a split)
 				currentPlayer.cards.push(this.deck.c.shift()); // Adds a card to the player hand
 				currentPlayer.calcVal(); // Recalculate the value of the player's hand
-				if(currentPlayer.val > 21) { // If the player busted
+				if(currentPlayer.val >= 21) { // If the player busted or has 21
 					currentPlayer.stand = true; // Stand the player
 				}
 			}else if(currentPlayer.stand && currentPlayer.splitted) { // Second hand of a split
 				currentPlayer.splitCards.push(this.deck.c.shift()); // Adds a card to the second hand
 				currentPlayer.calcVal(currentPlayer.splitCards, currentPlayer.splitStand); // Recalculates splitval
-				if(currentPlayer.splitVal > 21) { // If busted
+				if(currentPlayer.splitVal >= 21) { // If busted or 21
 					currentPlayer.splitStand = true; // stand
 				}
 			}
@@ -278,6 +278,14 @@ class BlackJack {
 	double(player) {
 		if(player.cards.length !== 2) { // If player has already picked a card
 			this.channel.send(`${player.user}, you can not double since you already picked a card.`).then(msg => {
+				setTimeout(() => {
+					msg.delete();
+				}, 5000);
+			});
+			return;
+		}
+		if(player.splitted) { // If player has already picked a card
+			this.channel.send(`${player.user}, you can not double after a split.`).then(msg => {
 				setTimeout(() => {
 					msg.delete();
 				}, 5000);
@@ -385,15 +393,13 @@ class BlackJack {
 			if(insured.includes(p)) {
 				p.balance += p.bet + p.bet/2 // Returns the bet and the insurance
 				mess += `🦺 | ${p.user} | Bet & Insurance returned ${p.bet + p.bet/2}\n`;
+			}else if(p.val.includes('BlackJack')) {
+				mess += `↕️ | ${p.user} | Push (${p.bet})`;
 			}else {
 				mess += `☠️ | ${p.user} | Bet lost (${p.bet})`;
 			}
 		});
-		this.channel.send(mess).then(m => {
-			setTimeout(() => {
-				m.delete();
-			}, 5000);
-		});
+		this.message.edit(mess);
 	}
 
 
@@ -423,7 +429,7 @@ class BlackJack {
 						let push = [];
 						bj.players.forEach(p => {
 							let alreadyHandled = win.includes(p) || lose.includes(p) || push.includes(p);
-							let goodVal = alreadyHandled && p.splitted ? p.val : p.splitVal; // To handle splitted players
+							let goodVal = alreadyHandled && p.splitted ? p.splitVal : p.val; // To handle splitted players
 							// If player has an Ace, takes the highest value
 							if(isNaN(goodVal) && !goodVal.includes('BlackJack')) goodVal =  parseInt(goodVal.split('/')[1], 10);
 							if(isNaN(goodVal) && goodVal.includes('BlackJack')) { // If the player has a natural bj
@@ -455,9 +461,7 @@ class BlackJack {
 						});
 
 						bj.editWin(win, lose, push, bankVal).then(msg => {
-							setTimeout(() => {
-								resolve(msg);
-							}, 2000);
+							resolve(msg);
 						});
 					}
 				}, 2500);
@@ -472,7 +476,7 @@ class BlackJack {
 			let mess = `💸 💰 Bank 🏦 💸 | ${bj.bank.join(' | ')} (${bankVal > 21 ? bankVal +  ` BUST` : bankVal})\n`;
 			let alreadyHandled = []; // Used with splitted hands
 			bj.players.forEach(p => {
-				if(alreadyHandled.includes(p)) { // If the player has already been on the loop before
+				if(!alreadyHandled.includes(p)) { // If the player hasn't already been on the loop before
 					logger.log(`${p.user.tag} (${p.user.id}) : ${p} (${p.val})`);
 				}else { // Else it's the 2nd hand of the player
 					logger.log(`${p.user.tag} (${p.user.id}) : ${p.splitCards} (${p.splitVal} | Split)`);
@@ -595,7 +599,7 @@ class BlackJack {
 				if(val > 21) turnemoji = '☠️';
 				ret += `${turnemoji} ${p.user} | ${p.splitCardsToString()} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
 			}else {
-				let turnemoji = this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
+				let turnemoji = !p.stand ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
 				let val = p.calcVal();
 				if(val > 21) turnemoji = '☠️';
 				ret += `${turnemoji} ${p.user} | ${p} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
