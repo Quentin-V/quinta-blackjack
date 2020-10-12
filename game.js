@@ -303,6 +303,7 @@ class BlackJack {
 	/***********************************/
 
 	insurance(thisDealCollector) {
+		console.log(`Starting insurance`);
 		this.wait = true; // Set wait to true to prevent reaction handling from principal message
 		this.channel.send(`The bank has an Ace, would you like to take the insurance (or Even Money) ?\n(You have 20 seconds to choose)`).then(m => {
 			m.react('✅'); // React
@@ -313,6 +314,7 @@ class BlackJack {
 			let notInsured = []; // Array of not insured people
 			let ignore = []; // Array of ignored players that can't afford the insurance
 			let hasChosen = 0; // Number of players that have chosen to take or not the insurance
+			let haveToChoose = this.players.length; // Can change during the choosing process (when taking even money)
 			insuranceColl.on('collect', (r, u) => {
 				r.users.remove(u); // Remove the reaction
 				let playerIns = this.players.find(p => p.user.id === u.id); // Find the player that wants the insurance
@@ -322,10 +324,12 @@ class BlackJack {
 				if(r.emoji.name === '✅') { // If the player takes the insurance
 					if(playerIns.balance >= playerIns.bet / 2) { // If the player can pay insurance
 						if(playerIns.val === `21 BlackJack`) { // If the player has a bj
+							console.log(`${p.user.tag} (${p.user.id}) takes even money`);
 							m.edit(m.content + `\n${playerIns.user} has a BlackJack and takes Even Money`); // Takes even money
 							playerIns.balance += playerIns.bet; // Pays the player
 							this.players = this.players.filter(p => p !== playerIns); // removes the player from the list
 						}else { // No blackjack, normal insurance
+							console.log(`${p.user.tag} (${p.user.id}) takes the insurance`);
 							playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
 							insured.push(playerIns); // Adds the player to the insured players list
 							m.edit(m.content + `\n${playerIns.user} took the insurance.`); // Inform players
@@ -341,7 +345,7 @@ class BlackJack {
 						}
 					}
 				}
-				if(hasChosen >= this.players.length) { // If everybody chose an action, stop the collector
+				if(hasChosen >= haveToChoose) { // If everybody chose an action, stop the collector
 					setTimeout(() => {
 						insuranceColl.stop('everybodyChose');
 					}, 1000);
@@ -351,10 +355,12 @@ class BlackJack {
 				let reason = null;
 				m.reactions.removeAll();
 				if(Deck.getVal(this.bank[1]) === 10) { // The bank has a blackjack
+					console.log(`The bank has a BlackJack`);
 					m.edit(`The bank has a BlackJack, you lose your bet if you're not insured.`); // Inform players
 					this.bankBj(insured);
 					reason = 'bankBj';
 				}else { // The bank does not have a bj
+					console.log(`The bank does not have a BlackJack`);
 					m.edit('The bank does not have a BlackJack, you lose your insurance bet if you took it'); // Inform players
 					if(this.choosing >= this.players.length) reason = 'dealEnd';
 				}
