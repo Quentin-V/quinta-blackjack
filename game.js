@@ -3,9 +3,9 @@ const Player = require('./player.js');
 const Discord = require('discord.js');
 var logger = require('./logger.js');
 
-const DEBUG = false;
-const BANK_CARDS = [];
-const PLAYER_CARDS = [];
+const DEBUG = true;
+const BANK_CARDS = ['Five :hearts:','Five :hearts:'];
+const PLAYER_CARDS = ['Eight :hearts:','Eight :hearts:'];
 
 class BlackJack {
 	constructor(message) {
@@ -262,7 +262,7 @@ class BlackJack {
 			});
 			return;
 		}
-		logger.log(`${currentPlayer.user.tag} splits`);
+		logger.log(`${player.user.tag} splits`);
 		player.balance -= player.bet; // Removes the bet again for the second hand
 		let indexPlayer = this.players.indexOf(player); // Get the index of the player
 		this.players.splice(indexPlayer + 1, 0, player) // Duplicate the player
@@ -292,7 +292,7 @@ class BlackJack {
 			});
 			return;
 		}
-		logger.log(`${currentPlayer.user.tag} doubles`);
+		logger.log(`${player.user.tag} doubles`);
 		player.cards.push(this.deck.c.shift()) // Pick one card
 		player.balance -= player.bet; // Removes the bet another time
 		player.bet *= 2; // Double the bet value
