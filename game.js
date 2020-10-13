@@ -343,7 +343,7 @@ class BlackJack {
 							playerIns.balance += playerIns.bet; // Pays the player
 							this.players = this.players.filter(p => p !== playerIns); // removes the player from the list
 						}else { // No blackjack, normal insurance
-							logger.log(`${p.user.tag} (${p.user.id}) takes the insurance`);
+							logger.log(`${playerIns.user.tag} (${playerIns.user.id}) takes the insurance`);
 							playerIns.balance -= playerIns.bet / 2; // Removes insurance cost from the player's balance
 							insured.push(playerIns); // Adds the player to the insured players list
 							m.edit(m.content + `\n${playerIns.user} took the insurance.`); // Inform players
@@ -585,6 +585,39 @@ class BlackJack {
 		player.save();
 		if(message.content.startsWith('give')) logger.log(`Gave ${amount} to ${user.tag} (${user.id}) | New balance ${player.balance}`);
 		else logger.log(`Set ${amount} to ${user.tag} (${user.id}) | New balance ${player.balance}`)
+	}
+
+	sendMoney(msg) {
+		let sender = this.allPlayers.find(p => p.user.id === msg.author.id);
+		let receiver = msg.mentions.users.array()[0];
+		let amount = parseInt(message.content.split(' ')[2]);
+		if(sender === undefined) { // The sender's not found
+			msg.reply(`You're not saved in the players, please play at least 1 time before sending money to someone`).then(m => {
+				setTimeout(() => {
+					m.delete();
+				}, 3000);
+			});
+			return;
+		}
+		if(receiver === undefined ||isNaN(amount)) { // If no mention or invalid amount
+			msg.reply(`Wrong syntax, use send @user amount`).then(m => {
+				setTimeout(() => {
+					m.delete();
+				}, 3000);
+			});
+			return;
+		}
+		if(sender.balance < amount) { // Sender's balance too low
+			msg.reply(`You do not own that much money`).then(m => {
+				setTimeout(() => {
+					m.delete()
+				}, 3000);
+			});
+		}
+		sender.balance -= amount;
+		receiver.balance += amount;
+		sender.save();
+		receiver.save();
 	}
 
 	toString() { // Returns the state of the game as a string with all the players, their cards and if it's their turn to choose what to do

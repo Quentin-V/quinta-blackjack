@@ -63,6 +63,10 @@ bot.on('message', message => {
 		});
 	}
 
+	if(message.content.startsWith('send')) {
+		game.sendMoney(message);
+	}
+
 	// Admin command to give/set balance for a player
 	if(message.author.id === '184331142286147584' && (message.content.startsWith('give') || message.content.startsWith('set'))) {
 		game.giveSet(message);
