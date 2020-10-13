@@ -15,6 +15,7 @@ class Deck {
 	}
 
 	static getVal(card) { // Returns the integer value or A if an ace, of a card given in paramater
+		if(card === undefined) return 0;
 		let symbol = card.split(' ')[0]; // Get the symbol of the card without the color
 		let index = cards.indexOf(symbol); // Finds its index
 		if(index > 8)

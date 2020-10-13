@@ -545,7 +545,7 @@ class BlackJack {
 		return val;
 	}
 
-	reset(message) { // Reset all vals at the end of the game and deletes the game message
+	reset(message = null) { // Reset all vals at the end of the game and deletes the game message
 		this.dealing = false;
 		this.bank = [];
 		this.choosing = 0;
@@ -562,9 +562,11 @@ class BlackJack {
 		});
 		this.players = [];
 		Player.saveAll(this.allPlayers); // Save the state of all players
-		setTimeout(() => {
-			message.delete();
-		}, 2500);
+		if(message !== null) {
+			setTimeout(() => {
+				message.delete();
+			}, 2500);
+		}
 	}
 
 	getBalance(user) { // Get the balance of a specific user

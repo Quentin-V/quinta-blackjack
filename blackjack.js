@@ -4,6 +4,8 @@ const credentials = require('./credentials.js');
 
 const bot = new Discord.Client();
 
+const admins = ['184331142286147584', '268753117082943488'];
+
 bot.on('ready', () => {
 	console.log(`Connected as ${bot.user.tag}`);
 })
@@ -67,8 +69,16 @@ bot.on('message', message => {
 		game.sendMoney(message);
 	}
 
+
+	// ADMIN COMMANDS
+	if(!admins.include(message.author.id)) return;
+
+	if(message.content.startsWith('reset')) {
+		game.reset();
+	}
+
 	// Admin command to give/set balance for a player
-	if(message.author.id === '184331142286147584' && (message.content.startsWith('give') || message.content.startsWith('set'))) {
+	if(message.content.startsWith('give') || message.content.startsWith('set')) {
 		game.giveSet(message);
 	}
 
