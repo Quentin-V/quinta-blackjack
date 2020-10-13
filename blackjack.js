@@ -71,7 +71,7 @@ bot.on('message', message => {
 
 
 	// ADMIN COMMANDS
-	if(!admins.include(message.author.id)) return;
+	if(!admins.includes(message.author.id)) return;
 
 	if(message.content.startsWith('reset')) {
 		game.reset();
