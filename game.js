@@ -138,7 +138,7 @@ class BlackJack {
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
 
-		if(this.changeShoe) {this.deck.shuffle(); this.changeShoe = false;} // Reshuffles the deck if needed
+		if(this.changeShoe) {this.deck = new Deck(); this.changeShoe = false;} // Reshuffles the deck if needed
 
 		if(this.deck.c.length < (6*52)/2) { // If we exceded half of the shoe, change it on the next deal
 			this.changeShoe = true;
