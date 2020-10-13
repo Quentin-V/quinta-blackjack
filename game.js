@@ -383,7 +383,7 @@ class BlackJack {
 			if(insured.includes(p)) {
 				p.balance += p.bet + p.bet/2 // Returns the bet and the insurance
 				mess += `🦺 | ${p.user} | Bet & Insurance returned ${p.bet + p.bet/2}\n`;
-			}else if(p.val.includes('BlackJack')) {
+			}else if(isNaN(p.val) && p.val.includes('BlackJack')) {
 				mess += `↕️ | ${p.user} | Push (${p.bet})`;
 			}else {
 				mess += `☠️ | ${p.user} | Bet lost (${p.bet})`;
