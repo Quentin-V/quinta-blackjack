@@ -130,13 +130,6 @@ class BlackJack {
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
 
-		if(this.changeShoe) {// Takes a new deck if needed
-			logger.log(`Changing the shoe`);
-			this.deck = new Deck();
-			this.changeShoe = false;
-			logger.log(`Shoe changed!`);
-		}
-
 		if(this.deck.c.length < (6*52)/2) { // If we exceded half of the shoe, change it on the next deal
 			this.changeShoe = true;
 			this.channel.send(`The shoe will be changed on the next deal.`).then(m => { // Inform players and deletes the message after 5s
@@ -216,13 +209,13 @@ class BlackJack {
 			if(!currentPlayer.stand) { // If the player is not standing (needed in case of a split)
 				currentPlayer.cards.push(this.deck.c.shift()); // Adds a card to the player hand
 				currentPlayer.calcVal(); // Recalculate the value of the player's hand
-				if(currentPlayer.val >= 21) { // If the player busted or has 21
+				if(currentPlayer.val >= 21 || currentPlayer.val === '11/21') { // If the player busted or has 21
 					currentPlayer.stand = true; // Stand the player
 				}
 			}else if(currentPlayer.stand && currentPlayer.splitted) { // Second hand of a split
 				currentPlayer.splitCards.push(this.deck.c.shift()); // Adds a card to the second hand
 				currentPlayer.calcVal(currentPlayer.splitCards, currentPlayer.splitStand); // Recalculates splitval
-				if(currentPlayer.splitVal >= 21) { // If busted or 21
+				if(currentPlayer.splitVal >= 21 || currentPlayer.splitVal === '11/21') { // If busted or 21
 					currentPlayer.splitStand = true; // stand
 				}
 			}
@@ -543,6 +536,12 @@ class BlackJack {
 	}
 
 	reset(message = null) { // Reset all vals at the end of the game and deletes the game message
+		if(this.changeShoe) {// Takes a new deck if needed
+			logger.log(`Changing the shoe`);
+			this.deck = new Deck();
+			this.changeShoe = false;
+			logger.log(`Shoe changed!`);
+		}
 		this.dealing = false;
 		this.bank = [];
 		this.choosing = 0;
