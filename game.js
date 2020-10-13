@@ -599,7 +599,7 @@ class BlackJack {
 				if(val > 21) turnemoji = '☠️';
 				ret += `${turnemoji} ${p.user} | ${p.splitCardsToString()} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
 			}else {
-				let turnemoji = !p.stand ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
+				let turnemoji = !p.stand && this.players.indexOf(p) === this.choosing ? '🟢' : '🔴'; // Emoji of if it's the player turn to choose
 				let val = p.calcVal();
 				if(val > 21) turnemoji = '☠️';
 				ret += `${turnemoji} ${p.user} | ${p} (${val > 21 ? val + ` BUST` : val})\n`; // Add a line for the player
