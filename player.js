@@ -70,6 +70,7 @@ class Player {
 		let ace = false; // Set ace
 
 		cards.forEach(c => { // To check each card
+			if(c === undefined) return; // Trying to avoid a weird error where the card was undefined
 			if(Deck.getVal(c) == 'A') { // If the card is an ace
 				if(ace) // It is not the first ace of the player's hand
 					val += 1; // Add 1 to val since 2 aces can't be 1/11, do not change ace boolean to still get a 1/11 ace
