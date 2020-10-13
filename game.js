@@ -107,21 +107,13 @@ class BlackJack {
 			}else { // Edit the betters message
 				this.betters.edit(bets); // Edit the message
 			}
-		}else { // Sends a new message and creates before dealing interval
+		}else { // Sends a new message and creates before dealing timeout
  			this.channel.send(bets).then(betters => {
-				this.betters = betters
+				this.betters = betters;
 				setTimeout(() => {
-					if(this.dealing || this.betters === null) return;
-					this.betters.edit(this.betters.content.replace(/[0-9]{2}/, '10'));
-					setTimeout(() => {
-						if(this.dealing) return;
-						this.betters.edit(this.betters.content.replace(/[0-9]{2}/, '5'));
-						setTimeout(() => {
-							if(this.dealing) return;
-							this.deal();
-						}, 5000);
-					}, 5000);
-				}, 5000);
+					if(this.dealing) return;
+					this.deal();
+				}, 15000);
 			});
 		}
 	}
@@ -138,7 +130,12 @@ class BlackJack {
 		this.betters.delete(); // Deletes the betters message
 		this.dealing = true; // Set dealing to true to prevent anything happening during the deal
 
-		if(this.changeShoe) {this.deck = new Deck(); this.changeShoe = false;} // Reshuffles the deck if needed
+		if(this.changeShoe) {// Takes a new deck if needed
+			logger.log(`Changing the shoe`);
+			this.deck = new Deck();
+			this.changeShoe = false;
+			logger.log(`Shoe changed!`);
+		}
 
 		if(this.deck.c.length < (6*52)/2) { // If we exceded half of the shoe, change it on the next deal
 			this.changeShoe = true;
@@ -567,6 +564,7 @@ class BlackJack {
 				message.delete();
 			}, 2500);
 		}
+		logger.log(`Resetted, ${this.deck.c.length} cards left in shoe`);
 	}
 
 	getBalance(user) { // Get the balance of a specific user
