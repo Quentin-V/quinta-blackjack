@@ -2,7 +2,7 @@ const cards = ['Ace', 'Deuce', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight',
 const colors = [':clubs:', ':diamonds:', ':hearts:', ':spades:'];
 
 class Deck {
-	constructor(deckNb) {
+	constructor(deckNb = 6) {
 		this.c = []; // Cards in the deck
 		for(let i = 0; i < deckNb; ++i) { // Filling the array with the number of decks given in parameter
 			cards.forEach(card => {

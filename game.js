@@ -15,7 +15,7 @@ class BlackJack {
 		this.players = []; // The active players of the deal
 		this.choosing = 0; // The index of the player choosing their action
 
-		this.deck = new Deck(6); // The deck of the game
+		this.deck = new Deck(); // The deck of the game
 
 		this.channel = message.channel; // The discord cahnnel of the game
 		this.message = message; // The message of the current deal
@@ -132,7 +132,7 @@ class BlackJack {
 
 		if(this.deck.c.length < (6*52)/2) { // If we exceded half of the shoe, change it on the next deal
 			this.changeShoe = true;
-			this.channel.send(`The shoe will be changed on the next deal.`).then(m => { // Inform players and deletes the message after 5s
+			this.channel.send(`The shoe will be changed at the end of this deal.`).then(m => { // Inform players and deletes the message after 5s
 				setTimeout(() => {
 					m.delete()
 				}, 5000);
