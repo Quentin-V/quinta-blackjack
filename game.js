@@ -589,6 +589,7 @@ class BlackJack {
 	sendMoney(msg) {
 		let sender = this.allPlayers.find(p => p.user.id === msg.author.id);
 		let receiver = msg.mentions.users.array()[0];
+		let receiverPlayer = this.allPlayers.find(p => p.user.id === receiver.id);
 		let amount = parseInt(msg.content.split(' ')[2]);
 		if(sender === undefined) { // The sender's not found
 			msg.reply(`You're not saved in the players, please play at least 1 time before sending money to someone`).then(m => {
@@ -598,7 +599,7 @@ class BlackJack {
 			});
 			return;
 		}
-		if(receiver === undefined ||isNaN(amount)) { // If no mention or invalid amount
+		if(receiver === undefined || isNaN(amount)) { // If no mention or invalid amount
 			msg.reply(`Wrong syntax, use send @user amount`).then(m => {
 				setTimeout(() => {
 					m.delete();
@@ -613,6 +614,7 @@ class BlackJack {
 				}, 3000);
 			});
 		}
+
 		sender.balance -= amount;
 		receiver.balance += amount;
 		sender.save();
