@@ -589,7 +589,7 @@ class BlackJack {
 	sendMoney(msg) {
 		let sender = this.allPlayers.find(p => p.user.id === msg.author.id);
 		let receiver = msg.mentions.users.array()[0];
-		let amount = parseInt(message.content.split(' ')[2]);
+		let amount = parseInt(msg.content.split(' ')[2]);
 		if(sender === undefined) { // The sender's not found
 			msg.reply(`You're not saved in the players, please play at least 1 time before sending money to someone`).then(m => {
 				setTimeout(() => {
