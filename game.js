@@ -616,9 +616,9 @@ class BlackJack {
 		}
 
 		sender.balance -= amount;
-		receiver.balance += amount;
+		receiverPlayer.balance += amount;
 		sender.save();
-		receiver.save();
+		receiverPlayer.save();
 	}
 
 	toString() { // Returns the state of the game as a string with all the players, their cards and if it's their turn to choose what to do
